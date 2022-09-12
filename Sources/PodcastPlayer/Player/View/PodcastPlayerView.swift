@@ -41,7 +41,7 @@ public class PodcastPlayerView: UIView, PlayerView {
     /// button to expand video
     public var fullScreenButton: UIButton? = {
         let button = UIButton()
-        button.setImage(UIImage(named: "expand"), for: .normal)
+        button.setImage(UIImage(named: "expand", in: Bundle.module, with: nil), for: .normal)
         return button
     }()
     

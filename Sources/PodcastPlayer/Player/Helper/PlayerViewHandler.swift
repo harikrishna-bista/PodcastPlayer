@@ -289,9 +289,9 @@ class PlayerViewHandler: NSObject {
     /// - Returns: UIImage?
     private func defaultPlaceholderImage(item: PlayerItem) -> UIImage? {
         if isPlayerItemVideo(item: item) {
-            return UIImage(named: "video")
+            return UIImage(named: "video", in: Bundle.module, with: nil)
         }
-        return UIImage(named: "audio")
+        return UIImage(named: "audio", in: Bundle.module, with: nil)
     }
     
     /// Update the player textual infos
