@@ -482,3 +482,29 @@ extension CMTime {
                    minute, second)
     }
 }
+
+/*extension UIImageView {
+    func loadImage(_ asset: AVAsset, completion: ((UIImage?) -> Void)? = nil) {
+        guard let asset = asset as? AVURLAsset else { return }
+        DispatchQueue.global(qos: .userInteractive).async {
+            let imageGenerator = AVAssetImageGenerator(asset: asset)
+            
+            let requestedTime: CMTime = asset.duration.seconds > 1 ? .zero : .positiveInfinity
+            
+            imageGenerator.requestedTimeToleranceBefore = requestedTime
+            imageGenerator.requestedTimeToleranceAfter = requestedTime
+            imageGenerator.appliesPreferredTrackTransform = true
+            
+            let time = CMTimeMakeWithSeconds(1.0, preferredTimescale: 100)
+            
+            imageGenerator.generateCGImagesAsynchronously(forTimes: [NSValue(time: time)]) { [weak self] (_, generatedImage, _, _, _) in
+                guard let self = self, let generatedImage = generatedImage else { return }
+                let image = UIImage(cgImage: generatedImage)
+                DispatchQueue.main.async {
+                    self.image = image
+                    completion?(image)
+                }
+            }
+        }
+    }
+}*/
