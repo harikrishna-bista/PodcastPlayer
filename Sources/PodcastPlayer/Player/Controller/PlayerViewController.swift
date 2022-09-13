@@ -109,7 +109,12 @@ public class PlayerViewController: UIViewController {
     /// - Parameter index: Int
     /// - Returns: Boolean to indicated sucessful in changing track
     private func changeTrack(to index: Int) -> Bool {
-        guard (0..<numberOfItems).contains(index) else { return false }
+        guard (0..<numberOfItems).contains(index) else {
+            if currentIndex >= 0 {
+                playerViewHandler.replay()
+            }
+            return false
+        }
         guard let item = getItem(at: index) else { fatalError("No item to play at index \(index)") }
         
         if delegate?.playerViewController(self, canPlayItem: item, atIndex: index) == false {
