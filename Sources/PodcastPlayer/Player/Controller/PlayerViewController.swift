@@ -44,8 +44,8 @@ public class PlayerViewController: UIViewController {
     
     /// Init
     /// - Parameter playerView: Any view confirming to PlayerView
-    public init(playerView: PlayerView) {
-        self.playerView = playerView
+    public init(playerView: PlayerView? = nil) {
+        self.playerView = playerView ?? PodcastPlayerView()
         self.playerViewHandler = PlayerViewHandler(playerView: self.playerView)
         super.init(nibName: nil, bundle: nil)
     }

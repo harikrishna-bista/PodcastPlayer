@@ -9,20 +9,20 @@ import UIKit
 
 
 /// PodcastPlayerView that cofirms to playerView
-public class PodcastPlayerView: UIView, PlayerView {
+class PodcastPlayerView: UIView, PlayerView {
 
     /// Setting for podcast player
-    public var setting: PlayerSetting { PodcastPlayerSetting() }
+    var setting: PlayerSetting { PodcastPlayerSetting() }
     
     ///  Container to show thumbnail or video frame
-    public lazy var displayContainerView: UIView = {
+    lazy var displayContainerView: UIView = {
         let view = UIView()
         view.backgroundColor = .black
         return view
     }()
     
     /// Show podcast title
-    public lazy var titleLabel: UILabel = {
+    lazy var titleLabel: UILabel = {
         let label = UILabel()
         label.text = "Title"
         label.font = UIFont.systemFont(ofSize: 20, weight: .bold)
@@ -31,7 +31,7 @@ public class PodcastPlayerView: UIView, PlayerView {
     }()
 
     /// Show podcast description
-    public var descriptionLabel: UILabel = {
+    var descriptionLabel: UILabel = {
         let label = UILabel()
         label.text = "Description"
         label.textAlignment = .center
@@ -39,21 +39,21 @@ public class PodcastPlayerView: UIView, PlayerView {
     }()
     
     /// button to expand video
-    public var fullScreenButton: UIButton? = {
+    var fullScreenButton: UIButton? = {
         let button = UIButton()
         button.setImage(UIImage(named: "expand", in: Bundle.module, with: nil), for: .normal)
         return button
     }()
     
     /// show current time in the podcast playing
-    public var currentTimeLabel: UILabel = {
+    var currentTimeLabel: UILabel = {
         let label = UILabel()
         label.text = "0:0"
         return label
     }()
     
     /// show total length of the podcast
-    public var durationLabel: UILabel = {
+    var durationLabel: UILabel = {
         let label = UILabel()
         label.text = "0:0"
 
@@ -61,27 +61,27 @@ public class PodcastPlayerView: UIView, PlayerView {
     }()
 
     /// slider to interact or show the current time of playback
-    public var sliderControl: UISlider = {
+    var sliderControl: UISlider = {
         let slider = UISlider()
         return slider
     }()
 
     /// skip backward in the podcast playing
-    public var skipBackwardButton: UIButton = {
+    var skipBackwardButton: UIButton = {
         let button = UIButton()
         button.setImage(UIImage(systemName: "gobackward.10"), for: .normal)
         return button
     }()
     
     /// skip forward in the podcast playing
-    public var skipForwardButton: UIButton = {
+    var skipForwardButton: UIButton = {
         let button = UIButton()
         button.setImage(UIImage(systemName: "goforward.10"), for: .normal)
         return button
     }()
 
     /// play and pause button
-    public var playPauseButton: UIButton = {
+    var playPauseButton: UIButton = {
         let button = UIButton()
         button.setImage(UIImage(systemName: "play"), for: .normal)
         return button
@@ -89,20 +89,20 @@ public class PodcastPlayerView: UIView, PlayerView {
     
     
     /// play previous button
-    public var previousButton: UIButton  = {
+    var previousButton: UIButton  = {
         let button = UIButton()
         button.setImage(UIImage(systemName: "backward.end"), for: .normal)
         return button
     }()
     
     /// play next button
-    public var nextButton: UIButton = {
+    var nextButton: UIButton = {
         let button = UIButton()
         button.setImage(UIImage(systemName: "forward.end"), for: .normal)
         return button
     }()
     
-    public override init(frame: CGRect) {
+    override init(frame: CGRect) {
         super.init(frame: frame)
         setupUI()
     }

@@ -9,21 +9,21 @@ import UIKit
 
 
 /// Podcast player setting the confirms to playerSetting
-public class PodcastPlayerSetting: PlayerSetting {
+class PodcastPlayerSetting: PlayerSetting {
     
     /// Pause icon to show when podcast is playing
-    public var pauseIcon: UIImage? { UIImage(systemName: "pause") }
+    var pauseIcon: UIImage? { UIImage(systemName: "pause") }
     
     /// Play icon to show when podcast is paused
-    public var playIcon: UIImage? { UIImage(systemName: "play") }
+    var playIcon: UIImage? { UIImage(systemName: "play") }
     
     /// time to skip forward or backward when podcast is playing
-    public var skipTimeInSeconds: Double { 10 }
+    var skipTimeInSeconds: Double { 10 }
     
     /// boolean to enable local caching of podcast
-    public var enableCaching: Bool { false }
+    var enableCaching: Bool { false }
 
     /// boolean to indicate if next podcase should play automatically
-    public var playNextAutomatically: Bool { true }
+    var playNextAutomatically: Bool { true }
 
 }
