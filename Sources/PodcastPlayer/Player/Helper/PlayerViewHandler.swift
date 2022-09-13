@@ -141,6 +141,12 @@ class PlayerViewHandler: NSObject {
         self.playerLayer.frame = self.playerView.displayContainerView.bounds
     }
     
+    /// Method to replay currentItem
+    func replay() {
+        seekToRatio(ratio: 0)
+        play()
+    }
+    
     /// Prepare player to expand to fullscreen
     /// - Returns: Current player to be provide for AVKIT AVPlayerViewController
     func preparePlayerToExpand() -> AVPlayer {
