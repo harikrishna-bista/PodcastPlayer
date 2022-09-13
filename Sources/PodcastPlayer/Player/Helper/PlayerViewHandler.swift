@@ -239,15 +239,20 @@ class PlayerViewHandler: NSObject {
         
         let placeholder = defaultPlaceholderImage(item: item)
         if let thumbnail = item.thumbnailURL {
-            URLSession.shared.dataTask(with: thumbnail) { [weak self] data, _, _ in
-                DispatchQueue.main.async {
-                    if let data = data, let image = UIImage(data: data) {
-                        self?.thumbnailImageView.image = image
-                    } else {
-                        self?.thumbnailImageView.image = placeholder
+            switch thumbnail {
+            case .url(let uRL):
+                URLSession.shared.dataTask(with: uRL) { [weak self] data, _, _ in
+                    DispatchQueue.main.async {
+                        if let data = data, let image = UIImage(data: data) {
+                            self?.thumbnailImageView.image = image
+                        } else {
+                            self?.thumbnailImageView.image = placeholder
+                        }
                     }
-                }
-            }.resume()
+                }.resume()
+            case .image(let uIImage):
+                self.thumbnailImageView.image = uIImage
+            }
         } else {
             self.thumbnailImageView.image = placeholder
         }
