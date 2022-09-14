@@ -112,6 +112,9 @@ class PodcastPlayerView: UIView, PlayerView {
     }
     
     private func setupUI() {
+        displayContainerView.translatesAutoresizingMaskIntoConstraints = false
+        displayContainerView.heightAnchor.constraint(equalTo: heightAnchor, multiplier: 0.38).isActive = true
+        
         let displayStackView = UIStackView(arrangedSubviews: [displayContainerView, titleLabel, descriptionLabel])
         displayStackView.axis = .vertical
         displayStackView.spacing = 10
