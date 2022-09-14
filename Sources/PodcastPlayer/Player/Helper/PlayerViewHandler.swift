@@ -281,7 +281,7 @@ class PlayerViewHandler: NSObject {
         playerView.displayContainerView.clipsToBounds = true
         NSLayoutConstraint.activate( [
             thumbnailImageView.leadingAnchor.constraint(equalTo: playerView.displayContainerView.leadingAnchor),
-            thumbnailImageView.topAnchor.constraint(equalTo: playerView.displayContainerView.top),
+            thumbnailImageView.topAnchor.constraint(equalTo: playerView.displayContainerView.topAnchor),
             thumbnailImageView.trailingAnchor.constraint(equalTo: playerView.displayContainerView.trailingAnchor),
             thumbnailImageView.bottomAnchor.constraint(equalTo: playerView.displayContainerView.bottomAnchor),
         ])
