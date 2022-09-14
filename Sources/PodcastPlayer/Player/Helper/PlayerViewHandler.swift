@@ -69,7 +69,6 @@ class PlayerViewHandler: NSObject {
         let imageView = UIImageView()
         imageView.translatesAutoresizingMaskIntoConstraints = false
         imageView.contentMode = .scaleAspectFill
-        imageView.setContentHuggingPriority(.defaultLow, for: .vertical)
         return imageView
     }()
     
@@ -280,10 +279,12 @@ class PlayerViewHandler: NSObject {
     private func addThumbnailImageView() {
         playerView.displayContainerView.addSubview(thumbnailImageView)
         playerView.displayContainerView.clipsToBounds = true
-        thumbnailImageView.centerXAnchor.constraint(equalTo: playerView.displayContainerView.centerXAnchor).isActive = true
-        thumbnailImageView.centerYAnchor.constraint(equalTo: playerView.displayContainerView.centerYAnchor).isActive = true
-        thumbnailImageView.widthAnchor.constraint(equalTo: playerView.displayContainerView.widthAnchor).isActive = true
-        thumbnailImageView.heightAnchor.constraint(equalToConstant: playerView.displayContainerView.heightAnchor).isActive = true
+        NSLayoutConstraint.activate( [
+            thumbnailImageView.leadingAnchor.constraint(equalTo: playerView.displayContainerView.leadingAnchor),
+            thumbnailImageView.topAnchor.constraint(equalTo: playerView.displayContainerView.top),
+            thumbnailImageView.trailingAnchor.constraint(equalTo: playerView.displayContainerView.trailingAnchor),
+            thumbnailImageView.bottomAnchor.constraint(equalTo: playerView.displayContainerView.bottomAnchor),
+        ])
     }
     
     /// Method to add videoplayerLayer in displaycontainerView
