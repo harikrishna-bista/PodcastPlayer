@@ -195,6 +195,9 @@ class PlayerViewHandler: NSObject {
     /// Play
     private func play() {
         guard player.currentItem != nil else { return }
+        if playerView.sliderControl.value == 1.0 {
+            seekToRatio(ratio: 0)
+        }
         player.play()
     }
     /// Pause
