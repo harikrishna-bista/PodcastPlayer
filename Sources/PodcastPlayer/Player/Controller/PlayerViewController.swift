@@ -65,6 +65,11 @@ public class PlayerViewController: UIViewController {
     public override func viewDidLoad() {
         super.viewDidLoad()
         playerViewHandler.delegate = self
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
+        } catch {
+            assertionFailure("Audio playback issue \(error.localizedDescription)")
+        }
     }
     
     /// ViewWillAppear
