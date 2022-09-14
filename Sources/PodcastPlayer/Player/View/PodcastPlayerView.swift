@@ -18,6 +18,8 @@ class PodcastPlayerView: UIView, PlayerView {
     lazy var displayContainerView: UIView = {
         let view = UIView()
         view.backgroundColor = .black
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.heightAnchor.constraint(equalToConstant: UIScreen.main.bounds.height * 0.38).isActive = true
         return view
     }()
     
@@ -115,9 +117,6 @@ class PodcastPlayerView: UIView, PlayerView {
         let displayStackView = UIStackView(arrangedSubviews: [displayContainerView, titleLabel, descriptionLabel])
         displayStackView.axis = .vertical
         displayStackView.spacing = 10
-        
-        displayContainerView.translatesAutoresizingMaskIntoConstraints = false
-        displayContainerView.heightAnchor.constraint(equalTo: heightAnchor, multiplier: 0.38).isActive = true
     
         let vStackView = UIStackView(arrangedSubviews: [displayStackView, getControlView()])
         vStackView.axis = .vertical
