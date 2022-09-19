@@ -7,6 +7,8 @@
 
 import UIKit
 import AVFoundation
+import Kingfisher
+import MediaPlayer
 
 /// Internal Enum to show the different state of the player
 enum PlayerStatus {
@@ -64,11 +66,14 @@ class PlayerViewHandler: NSObject {
     /// In memory cache to keep preloaded previous, current and next playerItem for faster interaction
     private var cache: [URL: AVPlayerItem] = [:]
     
+    ///In memory cache to keep thumbnail of only preloaded previous, current and nextPlayeritem
+    private var thumbnailCache: [URL: UIImage?] = [:]
+    
     /// imageview to display thumbnail in displayContainerView of player
     private lazy var thumbnailImageView: UIImageView = {
         let imageView = UIImageView()
         imageView.translatesAutoresizingMaskIntoConstraints = false
-        imageView.contentMode = .scaleAspectFill
+        imageView.contentMode = .scaleAspectFit
         return imageView
     }()
     
@@ -77,6 +82,14 @@ class PlayerViewHandler: NSObject {
     
     /// Observers for player
     private var playerObservers: [Any?] = []
+    
+    ///Current item title
+    fileprivate var trackName: String?
+    
+    ///Current item description
+    fileprivate var artistName: String?
+    
+    fileprivate var nowPlayingInfo : [String : Any] = [:]
     
     /// PlayerViewHandlerDelegate
     public weak var delegate: PlayerViewHandlerDelegate?
@@ -88,6 +101,8 @@ class PlayerViewHandler: NSObject {
         self.playerView = playerView
         super.init()
         self.observeEvents()
+        self.observeRemoteControlEvent()
+        self.setupRemoteCommands()
         self.setupControlsGesture()
         self.addThumbnailImageView()
         self.addPlayerLayer()
@@ -132,6 +147,7 @@ class PlayerViewHandler: NSObject {
         playerObservers = []
         NotificationCenter.default.removeObserver(self, name: .AVPlayerItemDidPlayToEndTime, object: nil)
         player.currentItem?.removeObserver(self, forKeyPath: #keyPath(AVPlayerItem.status))
+        removeRemoteControlEventObserver()
     }
     
     // MARK: - Public
@@ -180,12 +196,16 @@ class PlayerViewHandler: NSObject {
         if let previousItem = previousItem {
             cache[previousItem.itemURL] = getAVPlayerItem(item: previousItem)
         }
+        
         if let nextItem = nextItem {
             cache[nextItem.itemURL] = getAVPlayerItem(item: nextItem)
         }
         self.cache = cache
-        seekToRatio(ratio: 0)
+        self.trackName = item.title
+        self.artistName = item.description
+        
         play()
+        seekToRatio(ratio: 0)
         configurePlayerView(item: item)
     }
 
@@ -193,15 +213,17 @@ class PlayerViewHandler: NSObject {
     //MARK: - Private
     
     /// Play
-    private func play() {
-        guard player.currentItem != nil else { return }
+    @discardableResult
+    fileprivate func play() -> Bool {
+        guard player.currentItem != nil else { return false }
         if playerView.sliderControl.value == 1.0 {
             seekToRatio(ratio: 0)
         }
         player.play()
+        return true
     }
     /// Pause
-    private func pause() {
+    fileprivate func pause() {
         player.pause()
     }
     
@@ -240,44 +262,46 @@ class PlayerViewHandler: NSObject {
         updatePlayerDisplayContainer(item: item)
     }
     
+    fileprivate func setThumbnailFrom(_ thumbnail: ImageSource) {
+        switch thumbnail {
+        case .image(let image):
+            thumbnailImageView.image = image
+            self.updateNowPlayingArtwork(image: image)
+        case .url(let url):
+            thumbnailImageView.kf.setImage(with: url) { [weak self] result in
+                guard let self = self else { return }
+                DispatchQueue.main.async {
+                    self.updateNowPlayingArtwork(image: self.thumbnailImageView.image)
+                }
+            }
+        }
+    }
+    
     /// Update Display container based on current item
     /// - Parameter item: Current item
     private func updatePlayerDisplayContainer(item: PlayerItem) {
+        thumbnailImageView.image = nil
         let isVideo = isPlayerItemVideo(item: item)
         playerView.fullScreenButton?.isHidden = !isVideo
-        
-        let placeholder = defaultPlaceholderImage(item: item)
-        if let thumbnail = item.thumbnailURL {
-            switch thumbnail {
-            case .url(let uRL):
-                URLSession.shared.dataTask(with: uRL) { [weak self] data, _, _ in
-                    DispatchQueue.main.async {
-                        if let data = data, let image = UIImage(data: data) {
-                            self?.thumbnailImageView.image = image
-                        } else {
-                            self?.thumbnailImageView.image = placeholder
-                        }
-                    }
-                }.resume()
-            case .image(let uIImage):
-                self.thumbnailImageView.image = uIImage
+
+        if let thumbnail = item.thumbnail {
+            setThumbnailFrom(thumbnail)
+        } else if isVideo {
+            thumbnailImageView.setImageFrom(videoURL: item.itemURL) { [weak self] image in
+                self?.updateNowPlayingArtwork(image: image)
             }
         } else {
-            self.thumbnailImageView.image = placeholder
+            let image = UIImage(named: "audio")//UIImage(named: "audio", in: Bundle.main, with: nil)
+            thumbnailImageView.image = image
+            self.updateNowPlayingArtwork(image: image)
         }
-        
-        if isVideo {
-            playerLayer.isHidden = false
-            thumbnailImageView.isHidden = true
-        } else {
-            thumbnailImageView.isHidden = false
-            playerLayer.isHidden = true
-        }
+
+        playerLayer.isHidden = !isVideo
     }
     
     /// Method to add thumbnail imageview in displaycontainerview
     private func addThumbnailImageView() {
-        playerView.displayContainerView.addSubview(thumbnailImageView)
+        playerView.displayContainerView.insertSubview(thumbnailImageView, at: 0)
         playerView.displayContainerView.clipsToBounds = true
         NSLayoutConstraint.activate( [
             thumbnailImageView.leadingAnchor.constraint(equalTo: playerView.displayContainerView.leadingAnchor),
@@ -289,7 +313,7 @@ class PlayerViewHandler: NSObject {
     
     /// Method to add videoplayerLayer in displaycontainerView
     private func addPlayerLayer() {
-        playerView.displayContainerView.layer.insertSublayer(playerLayer, at: 0)
+        playerView.displayContainerView.layer.insertSublayer(playerLayer, at: 1)
         playerLayer.player = player
     }
     
@@ -301,32 +325,11 @@ class PlayerViewHandler: NSObject {
     }
     
     
-    /// Default thumbnail provider
-    /// - Parameter item: PlayerItem
-    /// - Returns: UIImage?
-    private func defaultPlaceholderImage(item: PlayerItem) -> UIImage? {
-        if isPlayerItemVideo(item: item) {
-            return UIImage(named: "video", in: Bundle.module, with: nil)
-        }
-        return UIImage(named: "audio", in: Bundle.module, with: nil)
-    }
-    
     /// Update the player textual infos
     /// - Parameter item: Player item
     private func updatePlayerViewLabels(item: PlayerItem) {
-        var title: String = ""
-        var desc: String = ""
-        
-        if let album = item.albumName, let track = item.trackName {
-            title = album
-            desc = track
-        } else {
-            let lastPath = item.itemURL.deletingPathExtension().lastPathComponent
-            title = lastPath
-            desc = lastPath
-        }
-        playerView.titleLabel.text = title
-        playerView.descriptionLabel.text = desc
+        playerView.titleLabel.text = item.title
+        playerView.descriptionLabel.text = item.description
     }
     
     /// Method to add observers
@@ -344,6 +347,7 @@ class PlayerViewHandler: NSObject {
                 self.delegate?.didChangePlayerStatus(.isPlaying)
             case .paused:
                 self.delegate?.didChangePlayerStatus(.isPaused)
+                self.updateNowPlayingInfo(playerItem: self.player.currentItem)
             case .waitingToPlayAtSpecifiedRate:
                 self.delegate?.didChangePlayerStatus(.isLoading)
             default:
@@ -364,6 +368,7 @@ class PlayerViewHandler: NSObject {
             guard let self = self, let duration = self.player.currentItem?.duration else { return }
             guard duration.seconds.isFinite && !duration.seconds.isNaN else { return }
             self.updatePlaybackProgress(currentTime: time, duration: duration)
+            self.updateNowPlayingInfo(playerItem: self.player.currentItem)
         }
         playerObservers.append(periodicObserver)
     }
@@ -446,20 +451,20 @@ extension PlayerViewHandler {
     }
     
     /// Handle previous button tap
-    @objc private func handlePreviousTap() {
+    @objc fileprivate func handlePreviousTap() {
         delegate?.didTapPrevious()
     }
     /// Handle next button tap
-    @objc private func handleNextTap() {
+    @objc fileprivate func handleNextTap() {
         delegate?.didTapNext()
     }
     /// Handle skipForward button tap
-    @objc private func handleSkipForwardTap() {
+    @objc fileprivate func handleSkipForwardTap() {
         skipTime(time: playerView.setting.skipTimeInSeconds)
         delegate?.didSkipForward()
     }
     /// Handle skipBackward button tap
-    @objc private func handleSkipBackwardTap() {
+    @objc fileprivate func handleSkipBackwardTap() {
         skipTime(time: -playerView.setting.skipTimeInSeconds)
         delegate?.didSkipBackward()
     }
@@ -478,45 +483,71 @@ extension PlayerViewHandler {
    
 }
 
-/// Extension to convert CMTime to textual information
-extension CMTime {
-    var roundedSeconds: TimeInterval {
-        return seconds.rounded()
+
+
+
+// MARK: - Remote controls
+extension PlayerViewHandler {
+    func observeRemoteControlEvent() {
+        UIApplication.shared.beginReceivingRemoteControlEvents()
+        let skipTime = NSNumber(value: playerView.setting.skipTimeInSeconds)
+        MPRemoteCommandCenter.shared().skipBackwardCommand.preferredIntervals = [skipTime]
+        MPRemoteCommandCenter.shared().skipForwardCommand.preferredIntervals = [skipTime]
     }
-    var hours: Int { return Int(seconds / 3600) }
-    var minute: Int { return Int(seconds.truncatingRemainder(dividingBy: 3600) / 60) }
-    var second: Int { return Int(seconds.truncatingRemainder(dividingBy: 60)) }
-    var positionalTime: String {
-        return hours > 0 ?
-            String(format: "%d:%02d:%02d",
-                   hours, minute, second) :
-            String(format: "%02d:%02d",
-                   minute, second)
+    
+    func removeRemoteControlEventObserver() {
+        UIApplication.shared.endReceivingRemoteControlEvents()
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+    }
+    
+    func updateNowPlayingInfo(playerItem: AVPlayerItem?) {
+        nowPlayingInfo[MPMediaItemPropertyTitle] = trackName
+        nowPlayingInfo[MPMediaItemPropertyArtist] = artistName
+        if let playerItem = playerItem {
+            nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = NSNumber(value: playerItem.duration.seconds)
+            nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = NSNumber(value: playerItem.currentTime().seconds)
+        }
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
+    }
+    
+    func updateNowPlayingArtwork(image: UIImage?) {
+        guard let image = image else {
+            return
+        }
+        nowPlayingInfo[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(boundsSize: image.size, requestHandler: { size in
+            let processedImage = DownsamplingImageProcessor(size: size).process(item: .image(image), options: .init(nil))
+            return processedImage ?? image
+        })
+    }
+    
+    func setupRemoteCommands() {
+        MPRemoteCommandCenter.shared().playCommand.isEnabled = true
+        MPRemoteCommandCenter.shared().playCommand.addTarget { [weak self] _ in
+            if self?.play() == true {
+                return .success
+            }
+            return .noActionableNowPlayingItem
+        }
+        
+        MPRemoteCommandCenter.shared().pauseCommand.isEnabled = true
+        MPRemoteCommandCenter.shared().pauseCommand.addTarget { [weak self] _ in
+            self?.pause()
+            return .success
+        }
+        
+
+        
+        MPRemoteCommandCenter.shared().nextTrackCommand.isEnabled = true
+        MPRemoteCommandCenter.shared().nextTrackCommand.addTarget { [weak self] _ in
+            self?.handleNextTap()
+            return .success
+        }
+        
+        MPRemoteCommandCenter.shared().previousTrackCommand.isEnabled = true
+        MPRemoteCommandCenter.shared().previousTrackCommand.addTarget { [weak self] _ in
+            self?.handlePreviousTap()
+            return .success
+        }
+    
     }
 }
-
-/*extension UIImageView {
-    func loadImage(_ asset: AVAsset, completion: ((UIImage?) -> Void)? = nil) {
-        guard let asset = asset as? AVURLAsset else { return }
-        DispatchQueue.global(qos: .userInteractive).async {
-            let imageGenerator = AVAssetImageGenerator(asset: asset)
-            
-            let requestedTime: CMTime = asset.duration.seconds > 1 ? .zero : .positiveInfinity
-            
-            imageGenerator.requestedTimeToleranceBefore = requestedTime
-            imageGenerator.requestedTimeToleranceAfter = requestedTime
-            imageGenerator.appliesPreferredTrackTransform = true
-            
-            let time = CMTimeMakeWithSeconds(1.0, preferredTimescale: 100)
-            
-            imageGenerator.generateCGImagesAsynchronously(forTimes: [NSValue(time: time)]) { [weak self] (_, generatedImage, _, _, _) in
-                guard let self = self, let generatedImage = generatedImage else { return }
-                let image = UIImage(cgImage: generatedImage)
-                DispatchQueue.main.async {
-                    self.image = image
-                    completion?(image)
-                }
-            }
-        }
-    }
-}*/

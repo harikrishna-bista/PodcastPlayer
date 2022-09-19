@@ -7,7 +7,7 @@
 
 import UIKit
 import AVKit
-
+import MediaPlayer
 
 /// Public class to play audio, podcast or video
 public class PlayerViewController: UIViewController {
@@ -65,11 +65,8 @@ public class PlayerViewController: UIViewController {
     public override func viewDidLoad() {
         super.viewDidLoad()
         playerViewHandler.delegate = self
-        do {
-            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
-        } catch {
-            assertionFailure("Audio playback issue \(error.localizedDescription)")
-        }
+        setupAudioSession()
+        configureNavigation()
     }
     
     /// ViewWillAppear
@@ -96,6 +93,24 @@ public class PlayerViewController: UIViewController {
         numberOfItems = .zero
         currentIndex = -1
         configurePlayList()
+    }
+    
+    private func configureNavigation() {
+        if presentingViewController != nil {
+            let image = UIImage(systemName: "multiply")
+            navigationItem.leftBarButtonItem = UIBarButtonItem(image: image, style: .done, target: self, action: #selector(handleDismiss))
+        }
+    }
+    private func setupAudioSession() {
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
+            try AVAudioSession.sharedInstance().setActive(true)
+        } catch {
+            assertionFailure("Audio playback issue \(error.localizedDescription)")
+        }
+    }
+    @objc private func handleDismiss() {
+        dismiss(animated: true, completion: nil)
     }
     //MARK: - Setup Data source
     
@@ -203,6 +218,8 @@ extension PlayerViewController: PlayerViewHandlerDelegate {
     func didTapFullScreen() {
         let player = playerViewHandler.preparePlayerToExpand()
         let fullScreenPlayerViewController = AVPlayerViewController()
+        fullScreenPlayerViewController.allowsPictureInPicturePlayback = false
+        fullScreenPlayerViewController.updatesNowPlayingInfoCenter = false
         fullScreenPlayerViewController.player = player
         fullScreenPlayerViewController.transitioningDelegate = self
         present(fullScreenPlayerViewController, animated: true) {
