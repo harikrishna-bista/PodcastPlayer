@@ -291,7 +291,7 @@ class PlayerViewHandler: NSObject {
                 self?.updateNowPlayingArtwork(image: image)
             }
         } else {
-            let image = UIImage(named: "audio")//UIImage(named: "audio", in: Bundle.main, with: nil)
+            let image = UIImage(named: "audio", in: Bundle.main, with: nil)
             thumbnailImageView.image = image
             self.updateNowPlayingArtwork(image: image)
         }

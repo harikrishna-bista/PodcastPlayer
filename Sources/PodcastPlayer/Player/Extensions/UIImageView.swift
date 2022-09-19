@@ -6,6 +6,8 @@
 //
 
 import UIKit
+import AVFoundation
+import Kingfisher
 
 /// Extension to set image from video url and cache
 extension UIImageView {
