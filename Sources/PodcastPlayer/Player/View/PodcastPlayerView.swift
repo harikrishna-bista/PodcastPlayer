@@ -20,6 +20,7 @@ class PodcastPlayerView: UIView, PlayerView {
         view.backgroundColor = .black
         view.translatesAutoresizingMaskIntoConstraints = false
         view.heightAnchor.constraint(equalToConstant: UIScreen.main.bounds.height * 0.38).isActive = true
+        view.layer.cornerRadius = 5
         return view
     }()
     
@@ -43,7 +44,7 @@ class PodcastPlayerView: UIView, PlayerView {
     /// button to expand video
     var fullScreenButton: UIButton? = {
         let button = UIButton()
-        let image = UIImage(named: "expand")//UIImage(named: "expand", in: Bundle.module, with: nil)
+        let image = UIImage(named: "expand", in: Bundle.module, with: nil)
         button.setImage(image, for: .normal)
         return button
     }()

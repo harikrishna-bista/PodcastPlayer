@@ -73,7 +73,7 @@ class PlayerViewHandler: NSObject {
     private lazy var thumbnailImageView: UIImageView = {
         let imageView = UIImageView()
         imageView.translatesAutoresizingMaskIntoConstraints = false
-        imageView.contentMode = .scaleAspectFit
+        imageView.contentMode = .scaleAspectFill
         return imageView
     }()
     
@@ -265,10 +265,10 @@ class PlayerViewHandler: NSObject {
     fileprivate func setThumbnailFrom(_ thumbnail: ImageSource) {
         switch thumbnail {
         case .image(let image):
-            thumbnailImageView.image = image
+            thumbnailImageView.image = DownsamplingImageProcessor(size: thumbnailImageView.bounds.size).process(item: .image(image), options: .init(nil))
             self.updateNowPlayingArtwork(image: image)
         case .url(let url):
-            thumbnailImageView.kf.setImage(with: url) { [weak self] result in
+            thumbnailImageView.kf.setImage(with: url,options: [.processor(DownsamplingImageProcessor(size: thumbnailImageView.bounds.size))]) { [weak self] result in
                 guard let self = self else { return }
                 DispatchQueue.main.async {
                     self.updateNowPlayingArtwork(image: self.thumbnailImageView.image)
@@ -283,7 +283,8 @@ class PlayerViewHandler: NSObject {
         thumbnailImageView.image = nil
         let isVideo = isPlayerItemVideo(item: item)
         playerView.fullScreenButton?.isHidden = !isVideo
-
+        thumbnailImageView.contentMode = isVideo ? .scaleAspectFit : .scaleAspectFit
+        
         if let thumbnail = item.thumbnail {
             setThumbnailFrom(thumbnail)
         } else if isVideo {
@@ -291,7 +292,7 @@ class PlayerViewHandler: NSObject {
                 self?.updateNowPlayingArtwork(image: image)
             }
         } else {
-            let image = UIImage(named: "audio")//UIImage(named: "audio", in: Bundle.main, with: nil)
+            let image = UIImage(named: "audio", in: Bundle.main, with: nil)
             thumbnailImageView.image = image
             self.updateNowPlayingArtwork(image: image)
         }
