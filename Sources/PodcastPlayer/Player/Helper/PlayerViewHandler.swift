@@ -291,7 +291,7 @@ class PlayerViewHandler: NSObject {
                 self?.updateNowPlayingArtwork(image: image)
             }
         } else {
-            let image = UIImage(named: "audio", in: Bundle.main, with: nil)
+            let image = UIImage(named: "audio")//UIImage(named: "audio", in: Bundle.main, with: nil)
             thumbnailImageView.image = image
             self.updateNowPlayingArtwork(image: image)
         }
@@ -392,8 +392,7 @@ class PlayerViewHandler: NSObject {
         guard let duration = player.currentItem?.duration else { return }
         let totalSeconds = CMTimeGetSeconds(duration)
         let value = Float64(ratio) * totalSeconds
-        let time = CMTimeMakeWithSeconds(value, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
-        player.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero)
+        seekToTimeInterval(value)
     }
     
     /// Jump through current playing item track position
@@ -406,6 +405,10 @@ class PlayerViewHandler: NSObject {
         player.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero)
     }
    
+    fileprivate func seekToTimeInterval(_ time: TimeInterval) {
+        let time = CMTimeMakeWithSeconds(time, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+        player.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero)
+    }
 }
 
 // MARK: - Handle control gesture
@@ -549,5 +552,12 @@ extension PlayerViewHandler {
             return .success
         }
     
+        MPRemoteCommandCenter.shared().changePlaybackPositionCommand.isEnabled = true
+        MPRemoteCommandCenter.shared().changePlaybackPositionCommand.addTarget { [weak self] event in
+            if let event = event as? MPChangePlaybackPositionCommandEvent {
+                self?.seekToTimeInterval(event.positionTime)
+            }
+            return .success
+        }
     }
 }
