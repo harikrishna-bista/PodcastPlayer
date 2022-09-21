@@ -265,7 +265,7 @@ class PlayerViewHandler: NSObject {
     fileprivate func setThumbnailFrom(_ thumbnail: ImageSource) {
         switch thumbnail {
         case .image(let image):
-            thumbnailImageView.image = DownsamplingImageProcessor(size: thumbnailImageView.bounds.size).process(item: .image(image), options: .init(nil))
+            thumbnailImageView.image = image
             self.updateNowPlayingArtwork(image: image)
         case .url(let url):
             thumbnailImageView.kf.setImage(with: url,options: [.processor(DownsamplingImageProcessor(size: thumbnailImageView.bounds.size))]) { [weak self] result in
