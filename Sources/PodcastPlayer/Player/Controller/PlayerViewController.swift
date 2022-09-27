@@ -38,7 +38,9 @@ public class PlayerViewController: UIViewController {
     
     /// Relative rect of the playerView video frame for animation
     private lazy var playerViewDisplayContainerRelativeRect: CGRect = {
-        return getDisplayContainerViewRelativeFrame(frame: playerView.displayContainerView.frame, superView: playerView.displayContainerView.superview)
+        let rect = getDisplayContainerViewRelativeFrame(frame: playerView.thumbnailImageView.frame, superView: playerView.thumbnailImageView.superview)
+        let cal = view.convert(rect, to: view.window)
+        return cal
     }()
     
     
@@ -65,10 +67,14 @@ public class PlayerViewController: UIViewController {
     public override func viewDidLoad() {
         super.viewDidLoad()
         playerViewHandler.delegate = self
+        playerViewHandler.configureDisplayView()
         setupAudioSession()
         configureNavigation()
     }
-    
+    public override func willMove(toParent parent: UIViewController?) {
+        super.willMove(toParent: parent)
+        playerViewHandler.configureDisplayView()
+    }
     /// ViewWillAppear
     /// - Parameter animated: Boolean
     public override func viewWillAppear(_ animated: Bool) {
@@ -85,11 +91,6 @@ public class PlayerViewController: UIViewController {
     /// ViewDidLayoutSubviews
     public override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        playerViewHandler.configureDisplayView()
-    }
-    
-    public override func willMove(toParent parent: UIViewController?) {
-        super.willMove(toParent: parent)
         playerViewHandler.configureDisplayView()
     }
     

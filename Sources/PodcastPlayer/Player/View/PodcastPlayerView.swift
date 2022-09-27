@@ -15,8 +15,8 @@ class PodcastPlayerView: UIView, PlayerView {
     var setting: PlayerSetting { PodcastPlayerSetting() }
     
     ///  Container to show thumbnail or video frame
-    lazy var displayContainerView: UIView = {
-        let view = UIView()
+    lazy var thumbnailImageView: UIImageView = {
+        let view = UIImageView()
         view.backgroundColor = .black
         view.translatesAutoresizingMaskIntoConstraints = false
         view.heightAnchor.constraint(equalToConstant: UIScreen.main.bounds.height * 0.38).isActive = true
@@ -44,7 +44,7 @@ class PodcastPlayerView: UIView, PlayerView {
     /// button to expand video
     var fullScreenButton: UIButton? = {
         let button = UIButton()
-        let image = UIImage(named: "expand", in: Bundle.module, with: nil)
+        let image = UIImage(named: "expand")//UIImage(named: "expand", in: Bundle.module, with: nil)
         button.setImage(image, for: .normal)
         return button
     }()
@@ -116,7 +116,7 @@ class PodcastPlayerView: UIView, PlayerView {
     }
     
     private func setupUI() {
-        let displayStackView = UIStackView(arrangedSubviews: [displayContainerView, titleLabel, descriptionLabel])
+        let displayStackView = UIStackView(arrangedSubviews: [thumbnailImageView, titleLabel, descriptionLabel])
         displayStackView.axis = .vertical
         displayStackView.spacing = 10
     
@@ -135,10 +135,10 @@ class PodcastPlayerView: UIView, PlayerView {
         ])
         
         if let fullScreenButton = fullScreenButton {
-            displayContainerView.addSubview(fullScreenButton)
+            thumbnailImageView.addSubview(fullScreenButton)
             fullScreenButton.translatesAutoresizingMaskIntoConstraints = false
-            fullScreenButton.trailingAnchor.constraint(equalTo: displayContainerView.trailingAnchor, constant: -5).isActive = true
-            fullScreenButton.bottomAnchor.constraint(equalTo: displayContainerView.bottomAnchor, constant: -5).isActive = true
+            fullScreenButton.trailingAnchor.constraint(equalTo: thumbnailImageView.trailingAnchor, constant: -5).isActive = true
+            fullScreenButton.bottomAnchor.constraint(equalTo: thumbnailImageView.bottomAnchor, constant: -5).isActive = true
         }
     }
     

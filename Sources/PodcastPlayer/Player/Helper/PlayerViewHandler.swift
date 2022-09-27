@@ -69,14 +69,6 @@ class PlayerViewHandler: NSObject {
     ///In memory cache to keep thumbnail of only preloaded previous, current and nextPlayeritem
     private var thumbnailCache: [URL: UIImage?] = [:]
     
-    /// imageview to display thumbnail in displayContainerView of player
-    private lazy var thumbnailImageView: UIImageView = {
-        let imageView = UIImageView()
-        imageView.translatesAutoresizingMaskIntoConstraints = false
-        imageView.contentMode = .scaleAspectFill
-        return imageView
-    }()
-    
     /// Context for observing playerItem
     private var playerItemContext = 0
     
@@ -104,7 +96,6 @@ class PlayerViewHandler: NSObject {
         self.observeRemoteControlEvent()
         self.setupRemoteCommands()
         self.setupControlsGesture()
-        self.addThumbnailImageView()
         self.addPlayerLayer()
     }
     
@@ -154,7 +145,7 @@ class PlayerViewHandler: NSObject {
     
     /// Update UI for display container view
     func configureDisplayView() {
-        self.playerLayer.frame = self.playerView.displayContainerView.bounds
+        self.playerLayer.frame = self.playerView.thumbnailImageView.bounds
     }
     
     /// Method to replay currentItem
@@ -265,13 +256,13 @@ class PlayerViewHandler: NSObject {
     fileprivate func setThumbnailFrom(_ thumbnail: ImageSource) {
         switch thumbnail {
         case .image(let image):
-            thumbnailImageView.image = image
+            playerView.thumbnailImageView.image = image
             self.updateNowPlayingArtwork(image: image)
         case .url(let url):
-            thumbnailImageView.kf.setImage(with: url,options: [.processor(DownsamplingImageProcessor(size: thumbnailImageView.bounds.size))]) { [weak self] result in
+            playerView.thumbnailImageView.kf.setImage(with: url,options: [.processor(DownsamplingImageProcessor(size: playerView.thumbnailImageView.bounds.size))]) { [weak self] result in
                 guard let self = self else { return }
                 DispatchQueue.main.async {
-                    self.updateNowPlayingArtwork(image: self.thumbnailImageView.image)
+                    self.updateNowPlayingArtwork(image: self.playerView.thumbnailImageView.image)
                 }
             }
         }
@@ -280,41 +271,30 @@ class PlayerViewHandler: NSObject {
     /// Update Display container based on current item
     /// - Parameter item: Current item
     private func updatePlayerDisplayContainer(item: PlayerItem) {
-        thumbnailImageView.image = nil
+        playerView.thumbnailImageView.image = nil
         let isVideo = isPlayerItemVideo(item: item)
         playerView.fullScreenButton?.isHidden = !isVideo
-        thumbnailImageView.contentMode = isVideo ? .scaleAspectFit : .scaleAspectFit
+        playerView.thumbnailImageView.contentMode = isVideo ? .scaleAspectFit : .scaleAspectFit
         
         if let thumbnail = item.thumbnail {
             setThumbnailFrom(thumbnail)
         } else if isVideo {
-            thumbnailImageView.setImageFrom(videoURL: item.itemURL) { [weak self] image in
+            playerView.thumbnailImageView.setImageFrom(videoURL: item.itemURL) { [weak self] image in
                 self?.updateNowPlayingArtwork(image: image)
             }
         } else {
-            let image = UIImage(named: "audio", in: Bundle.main, with: nil)
-            thumbnailImageView.image = image
+            let image = UIImage(named: "audio")//UIImage(named: "audio", in: Bundle.main, with: nil)
+            playerView.thumbnailImageView.image = image
             self.updateNowPlayingArtwork(image: image)
         }
 
         playerLayer.isHidden = !isVideo
     }
     
-    /// Method to add thumbnail imageview in displaycontainerview
-    private func addThumbnailImageView() {
-        playerView.displayContainerView.insertSubview(thumbnailImageView, at: 0)
-        playerView.displayContainerView.clipsToBounds = true
-        NSLayoutConstraint.activate( [
-            thumbnailImageView.leadingAnchor.constraint(equalTo: playerView.displayContainerView.leadingAnchor),
-            thumbnailImageView.topAnchor.constraint(equalTo: playerView.displayContainerView.topAnchor),
-            thumbnailImageView.trailingAnchor.constraint(equalTo: playerView.displayContainerView.trailingAnchor),
-            thumbnailImageView.bottomAnchor.constraint(equalTo: playerView.displayContainerView.bottomAnchor),
-        ])
-    }
-    
+
     /// Method to add videoplayerLayer in displaycontainerView
     private func addPlayerLayer() {
-        playerView.displayContainerView.layer.insertSublayer(playerLayer, at: 1)
+        playerView.thumbnailImageView.layer.insertSublayer(playerLayer, at: 1)
         playerLayer.player = player
     }
     
@@ -440,6 +420,8 @@ extension PlayerViewHandler {
         
         playerView.fullScreenButton?.isUserInteractionEnabled = true
         playerView.fullScreenButton?.addTarget(self, action: #selector(handleFullScreenTap), for: .touchUpInside)
+        
+        playerView.thumbnailImageView.isUserInteractionEnabled  = true
     }
     
     /// Handle playpause button tap

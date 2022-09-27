@@ -11,7 +11,7 @@ import UIKit
 /// Custom playerView to show when playing media
 public protocol PlayerView: UIView {
     ///  Container view to show thumbnails, video frame
-    var displayContainerView: UIView { get }
+    var thumbnailImageView: UIImageView { get }
     
     /// title info about item playing
     var titleLabel: UILabel { get }
