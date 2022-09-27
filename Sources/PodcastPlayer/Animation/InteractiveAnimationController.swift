@@ -70,7 +70,6 @@ extension InteractiveAnimationController: UIViewControllerAnimatedTransitioning 
             transitionContext.containerView.addSubview(toViewController.view)
             presentAnimation(using: transitionContext, viewToAnimate: toViewController.view)
         case .dismiss:
-            transitionContext.containerView.addSubview(toViewController.view)
             transitionContext.containerView.addSubview(fromViewController.view)
             dismissAnimation(using: transitionContext, viewToAnimate: fromViewController.view)
         }

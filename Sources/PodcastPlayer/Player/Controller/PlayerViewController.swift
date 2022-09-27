@@ -88,6 +88,11 @@ public class PlayerViewController: UIViewController {
         playerViewHandler.configureDisplayView()
     }
     
+    public override func willMove(toParent parent: UIViewController?) {
+        super.willMove(toParent: parent)
+        playerViewHandler.configureDisplayView()
+    }
+    
     /// Reloads the list
     public func reloadPlaylist() {
         numberOfItems = .zero
