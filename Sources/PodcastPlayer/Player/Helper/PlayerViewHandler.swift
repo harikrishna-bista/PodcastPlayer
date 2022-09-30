@@ -86,7 +86,14 @@ class PlayerViewHandler: NSObject {
     /// PlayerViewHandlerDelegate
     public weak var delegate: PlayerViewHandlerDelegate?
     
-    
+    fileprivate lazy var loader: UIActivityIndicatorView = {
+        let loader = UIActivityIndicatorView(style: .medium)
+        loader.hidesWhenStopped = true
+        playerView.setting.playIcon?.mainColor(completion: { color in
+            loader.color = color
+        })
+        return loader
+    }()
     /// Init
     /// - Parameter playerView: View the confirms to PlayerView protocol
     init(playerView: PlayerView) {
@@ -323,6 +330,7 @@ class PlayerViewHandler: NSObject {
     private func addStatusObserver() {
         let timeControlObserver = self.player.observe(\.timeControlStatus, options: [.old, .new]) { [weak self] (player, _) in
             guard let self = self else { return }
+            self.updateLoaderStatus()
             switch player.timeControlStatus {
             case .playing:
                 self.delegate?.didChangePlayerStatus(.isPlaying)
@@ -331,6 +339,8 @@ class PlayerViewHandler: NSObject {
                 self.updateNowPlayingInfo(playerItem: self.player.currentItem)
             case .waitingToPlayAtSpecifiedRate:
                 self.delegate?.didChangePlayerStatus(.isLoading)
+                self.playerView.currentTimeLabel.text = "-:-"
+                self.playerView.durationLabel.text = "-:-"
             default:
                 break
             }
@@ -390,6 +400,18 @@ class PlayerViewHandler: NSObject {
         let time = CMTimeMakeWithSeconds(time, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
         player.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero)
     }
+    
+    private func updateLoaderStatus() {
+        switch player.timeControlStatus {
+        case .waitingToPlayAtSpecifiedRate:
+            loader.startAnimating()
+            playerView.playPauseButton.isEnabled = false
+            playerView.playPauseButton.setImage(nil, for: .normal)
+        default:
+            loader.stopAnimating()
+            playerView.playPauseButton.isEnabled = true
+        }
+    }
 }
 
 // MARK: - Handle control gesture
@@ -422,6 +444,11 @@ extension PlayerViewHandler {
         playerView.fullScreenButton?.addTarget(self, action: #selector(handleFullScreenTap), for: .touchUpInside)
         
         playerView.thumbnailImageView.isUserInteractionEnabled  = true
+        
+        playerView.playPauseButton.addSubview(loader)
+        loader.translatesAutoresizingMaskIntoConstraints = false
+        loader.centerYAnchor.constraint(equalTo: playerView.playPauseButton.centerYAnchor).isActive = true
+        loader.centerXAnchor.constraint(equalTo: playerView.playPauseButton.centerXAnchor).isActive = true
     }
     
     /// Handle playpause button tap
