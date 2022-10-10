@@ -228,7 +228,12 @@ extension PlayerViewController: PlayerViewHandlerDelegate {
         fullScreenPlayerViewController.updatesNowPlayingInfoCenter = false
         fullScreenPlayerViewController.player = player
         fullScreenPlayerViewController.transitioningDelegate = self
-        present(fullScreenPlayerViewController, animated: true) {
+        
+        let navigationController = UINavigationController(rootViewController: fullScreenPlayerViewController)
+        navigationController.setNavigationBarHidden(true, animated: false)
+        navigationController.modalPresentationStyle = .fullScreen
+        navigationController.transitioningDelegate = self
+        present(navigationController, animated: true) {
             self.isPlayerWasInFullScreenMode = true
         }
     }
