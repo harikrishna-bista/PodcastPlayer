@@ -309,7 +309,7 @@ class PlayerViewHandler: NSObject {
     /// - Parameter item: PlayerItem
     /// - Returns: Boolean
     private func isPlayerItemVideo(item: PlayerItem) -> Bool {
-        return item.itemURL.absoluteString.hasSuffix(".mp4")
+        return self.player.currentItem?.asset.tracks.filter({$0.mediaType == AVMediaType.video}).count != 0
     }
     
     
