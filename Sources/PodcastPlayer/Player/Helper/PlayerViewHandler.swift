@@ -141,6 +141,7 @@ class PlayerViewHandler: NSObject {
     
     /// Deinitialized
     deinit  {
+        player.pause()
         debugPrint("deinit \(String(describing: self))")
         playerObservers = []
         NotificationCenter.default.removeObserver(self, name: .AVPlayerItemDidPlayToEndTime, object: nil)
@@ -186,25 +187,29 @@ class PlayerViewHandler: NSObject {
     ///   - previousItem: Previous item to be preloaded
     ///   - nextItem: Next item to be preloaded
     func startPlayingItem(item: PlayerItem, previousItem: PlayerItem?, nextItem: PlayerItem?) {
+        updateInitialUI(item: item)
         var cache: [URL: AVPlayerItem] = [:]
-        let currentPlayerItem = getAVPlayerItem(item: item, loadSync: true)
-        
-        player.replaceCurrentItem(with: currentPlayerItem)
-        cache[item.itemURL] = currentPlayerItem
-        if let previousItem = previousItem {
-            cache[previousItem.itemURL] = getAVPlayerItem(item: previousItem)
+        getAVPlayerItem(item: item) { [weak self] currentPlayerItem in
+            guard let self = self else { return }
+            self.player.replaceCurrentItem(with: currentPlayerItem)
+            self.configurePlayerView(item: item)
+            cache[item.itemURL] = currentPlayerItem
+            if let previousItem = previousItem {
+                self.getAVPlayerItem(item: previousItem) { item in
+                    cache[previousItem.itemURL] = item
+                }
+            }
+            
+            if let nextItem = nextItem {
+                self.getAVPlayerItem(item: nextItem) { item in
+                    cache[nextItem.itemURL] = item
+                }
+            }
+            self.cache = cache
+            self.trackName = item.title
+            self.artistName = item.description
+            self.play()
         }
-        
-        if let nextItem = nextItem {
-            cache[nextItem.itemURL] = getAVPlayerItem(item: nextItem)
-        }
-        self.cache = cache
-        self.trackName = item.title
-        self.artistName = item.description
-        
-        play()
-        seekToRatio(ratio: 0)
-        configurePlayerView(item: item)
     }
 
     
@@ -230,33 +235,40 @@ class PlayerViewHandler: NSObject {
     ///   - item: item to be used to initialize AVPlayerItem
     ///   - loadSync: boolean to indicate preload to handle synchronously or asynchronously
     /// - Returns: AVPlayerItem for playing
-    private func getAVPlayerItem(item: PlayerItem, loadSync: Bool = false) -> AVPlayerItem {
-        if let item = cache[item.itemURL] {
-            return item
+    private func getAVPlayerItem(item: PlayerItem, loadSync: Bool = false, queue:  DispatchQueue = .main, completion: @escaping (AVPlayerItem) -> Void) {
+        DispatchQueue.global(qos: .userInteractive).async {
+            if let item = self.cache[item.itemURL] {
+                queue.async {
+                    completion(item)
+                }
+            }
+            let asset = AVAsset(url: item.itemURL)
+            let keys = ["playable",
+                        "hasProtectedContent", "duration"]
+            var playerItem: AVPlayerItem!
+            
+            if loadSync {
+                playerItem = AVPlayerItem(asset: asset, automaticallyLoadedAssetKeys: keys)
+            } else {
+                asset.loadValuesAsynchronously(forKeys: keys, completionHandler: nil)
+                playerItem = AVPlayerItem(asset: asset)
+            }
+            queue.async {
+                playerItem.addObserver(self,
+                                           forKeyPath: #keyPath(AVPlayerItem.status),
+                                           options: [.old, .new],
+                                       context: &self.playerItemContext)
+                NotificationCenter.default.addObserver(self, selector: #selector(self.currentItemFinishedPlaying), name: .AVPlayerItemDidPlayToEndTime, object: playerItem)
+                completion(playerItem)
+            }
+           
         }
-        let asset = AVAsset(url: item.itemURL)
-        let keys = ["playable",
-                    "hasProtectedContent", "duration"]
-        var playerItem: AVPlayerItem!
-        
-        if loadSync {
-            playerItem = AVPlayerItem(asset: asset, automaticallyLoadedAssetKeys: keys)
-        } else {
-            asset.loadValuesAsynchronously(forKeys: keys, completionHandler: nil)
-            playerItem = AVPlayerItem(asset: asset)
-        }
-        playerItem.addObserver(self,
-                                   forKeyPath: #keyPath(AVPlayerItem.status),
-                                   options: [.old, .new],
-                                   context: &playerItemContext)
-        NotificationCenter.default.addObserver(self, selector: #selector(currentItemFinishedPlaying), name: .AVPlayerItemDidPlayToEndTime, object: playerItem)
-        return playerItem
+
     }
     
     /// Update UI of PlayerView
     /// - Parameter item: Current Item
     private func configurePlayerView(item: PlayerItem) {
-        updatePlayerViewLabels(item: item)
         updatePlayerDisplayContainer(item: item)
     }
     
@@ -404,13 +416,24 @@ class PlayerViewHandler: NSObject {
     private func updateLoaderStatus() {
         switch player.timeControlStatus {
         case .waitingToPlayAtSpecifiedRate:
-            loader.startAnimating()
-            playerView.playPauseButton.isEnabled = false
-            playerView.playPauseButton.setImage(nil, for: .normal)
+            showLoader()
         default:
             loader.stopAnimating()
             playerView.playPauseButton.isEnabled = true
         }
+    }
+    
+    private func showLoader() {
+        loader.startAnimating()
+        playerView.playPauseButton.isEnabled = false
+        playerView.playPauseButton.setImage(nil, for: .normal)
+    }
+    
+    private func updateInitialUI(item: PlayerItem) {
+        playerView.currentTimeLabel.text = "-:-"
+        playerView.durationLabel.text = "-:-"
+        updatePlayerViewLabels(item: item)
+        showLoader()
     }
 }
 

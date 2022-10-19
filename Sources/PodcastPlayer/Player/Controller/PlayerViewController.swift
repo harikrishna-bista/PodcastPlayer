@@ -43,6 +43,7 @@ public class PlayerViewController: UIViewController {
         return cal
     }()
     
+    private var nextPlayableIndexUponError: Int = -1
     
     /// Init
     /// - Parameter playerView: Any view confirming to PlayerView
@@ -204,12 +205,14 @@ extension PlayerViewController: PlayerViewHandlerDelegate {
     /// Handle play previous in the playerView
     func didTapPrevious() {
         if changeTrack(to: currentIndex - 1) {
+            nextPlayableIndexUponError = max(currentIndex - 1, 0)
             delegate?.playerViewController(self, didSkipItemAtIndex: currentIndex + 1, withReason: .userSkipped)
         }
     }
     /// Handle play next in the playerView
     func didTapNext() {
         if changeTrack(to: currentIndex + 1) {
+            nextPlayableIndexUponError = currentIndex + 1
             delegate?.playerViewController(self, didSkipItemAtIndex: currentIndex - 1, withReason: .userSkipped)
         }
     }
@@ -250,7 +253,11 @@ extension PlayerViewController: PlayerViewHandlerDelegate {
             delegate?.playerViewController(self, didPauseItem: currentItem!, atIndex: currentIndex)
         case .failed(let reason):
             delegate?.playerViewController(self, didSkipItemAtIndex: currentIndex, withReason: .error(reason))
-            changeTrack(to: currentIndex + 1)
+            if currentIndex == 0 {
+                changeTrack(to: currentIndex + 1)
+            } else {
+                changeTrack(to: nextPlayableIndexUponError)
+            }
         }
     }
 }
